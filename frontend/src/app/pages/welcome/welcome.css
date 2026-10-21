@@ -1,0 +1,35 @@
+/* Custom transition and subtle hover polish for cards and metric boxes */
+.card,
+.metric-box {
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.metric-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
+  border-color: #adb5bd !important;
+}
+
+/* Ensure admin home page fits cleanly within the viewport to prevent unnecessary scrolling */
+:host {
+  display: block;
+}
+
+.container.py-3 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem !important;
+}
+
+.mb-4 {
+  margin-bottom: 1rem !important;
+}

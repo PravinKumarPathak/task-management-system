@@ -1,0 +1,67 @@
+<header>
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark px-3 sticky-top shadow-sm">
+    <!-- Brand Logo / Link -->
+    <a
+      [routerLink]="authStore.isUserLoggedIn() ? '/welcome' : '/login'"
+      class="navbar-brand d-flex align-items-center gap-2 py-1"
+    >
+      <div
+        class="bg-primary text-white fw-bold rounded-2 d-flex align-items-center justify-content-center shadow-sm"
+        style="width: 32px; height: 32px; font-size: 0.75rem; letter-spacing: 0.5px"
+      >
+        TMS
+      </div>
+      <span class="fw-semibold text-white" style="font-size: 0.95rem; opacity: 0.9">
+        Task Management System
+      </span>
+    </a>
+
+    <!-- Mobile Toggler Button -->
+    <button
+      class="navbar-toggler border-0"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsible Menu Wrapper -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        @if (authStore.isUserLoggedIn()) {
+          <li class="nav-item">
+            <a routerLink="/welcome" routerLinkActive="active" class="nav-link">Home</a>
+          </li>
+          <li class="nav-item">
+            <a routerLink="/tasks" routerLinkActive="active" class="nav-link">Tasks</a>
+          </li>
+
+          <!-- Admin-only link -->
+          @if (authStore.isAdmin()) {
+            <li class="nav-item">
+              <a routerLink="/admin/users" routerLinkActive="active" class="nav-link"
+                >User Management</a
+              >
+            </li>
+          }
+        }
+      </ul>
+
+      <ul class="navbar-nav">
+        @if (authStore.isUserLoggedIn()) {
+          <li class="nav-item">
+            <a routerLink="/logout" routerLinkActive="active" class="nav-link">Logout</a>
+          </li>
+        } @else {
+          <li class="nav-item">
+            <a routerLink="/login" routerLinkActive="active" class="nav-link">Sign In</a>
+          </li>
+        }
+      </ul>
+    </div>
+  </nav>
+</header>
