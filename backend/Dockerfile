@@ -2,6 +2,8 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 COPY . .
+# Grant execution permission to the Maven wrapper
+RUN chmod +x mvnw
 RUN ./mvnw clean package -DskipTests
 
 # Run stage
