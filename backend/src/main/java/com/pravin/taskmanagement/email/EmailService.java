@@ -5,17 +5,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import com.pravin.taskmanagement.user.PasswordResetToken;
 import com.pravin.taskmanagement.user.PasswordResetTokenRepository;
@@ -27,7 +28,7 @@ public class EmailService {
 
 	private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-	private final JavaMailSender mailSender;
+	private final RestClient restClient;
 	private final UserRepository userRepository;
 	private final PasswordResetTokenRepository tokenRepository;
 
@@ -37,11 +38,19 @@ public class EmailService {
 	@Value("${app.mail.from-email}")
 	private String fromEmail;
 
-	public EmailService(JavaMailSender mailSender, UserRepository userRepository,
+	public EmailService(
+			@Value("${brevo.api.key}") String apiKey,
+			UserRepository userRepository,
 			PasswordResetTokenRepository tokenRepository) {
-		this.mailSender = mailSender;
 		this.userRepository = userRepository;
 		this.tokenRepository = tokenRepository;
+		
+		// Initialize RestClient targeting Brevo's HTTPS v3 API endpoint over port 443
+		this.restClient = RestClient.builder()
+				.baseUrl("https://api.brevo.com/v3")
+				.defaultHeader("api-key", apiKey)
+				.defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+				.build();
 	}
 
 	@Async
@@ -68,18 +77,29 @@ public class EmailService {
 
 		String resetLink = frontendUrl + "/reset-password?token=" + rawToken;
 
-		SimpleMailMessage message = new SimpleMailMessage();
-		message.setFrom(fromEmail);
-		message.setTo(email);
-		message.setSubject("Password Reset Request");
-		message.setText("Click the following link to reset your password:\n" + resetLink
-				+ "\n\nThis link expires in 15 minutes.");
+		// Format HTML payload for Brevo API
+		String subject = "Password Reset Request";
+		String htmlContent = "<p>Click the following link to reset your password:</p>" +
+				"<p><a href=\"" + resetLink + "\">Reset Password</a></p>" +
+				"<p>This link expires in 15 minutes.</p>";
+
+		Sender sender = new Sender("Task Management System", fromEmail);
+		Recipient recipient = new Recipient(email, user.getUsername());
+		BrevoPayload payload = new BrevoPayload(sender, List.of(recipient), subject, htmlContent);
 
 		try {
-			mailSender.send(message);
-			log.info("Password reset email successfully sent to {}", email);
+			restClient.post()
+					.uri("/smtp/email")
+					.body(payload)
+					.retrieve()
+					.toBodilessEntity();
+			
+			log.info("Password reset email successfully sent via Brevo HTTPS API to {}", email);
 		} catch (Exception e) {
-			log.error("SMTP Mail Sending Failed for {}: {}", email, e.getMessage(), e);
+			log.error("Brevo API Mail Sending Failed for {}: {}", email, e.getMessage(), e);
+			
+			// Safe console fallback for debugging or live demonstrations if needed
+			log.info("FALLBACK PASSWORD RESET LINK FOR TESTING: {}", resetLink);
 		}
 	}
 
@@ -92,4 +112,9 @@ public class EmailService {
 			throw new RuntimeException("SHA-256 algorithm not available", e);
 		}
 	}
+
+	// Modern Java records mapping directly to Brevo's API JSON payload structure
+	private record BrevoPayload(Sender sender, List<Recipient> to, String subject, String htmlContent) {}
+	private record Sender(String name, String email) {}
+	private record Recipient(String email, String name) {}
 }
