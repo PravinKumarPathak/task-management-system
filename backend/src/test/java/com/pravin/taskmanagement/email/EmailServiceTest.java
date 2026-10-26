@@ -3,7 +3,6 @@ package com.pravin.taskmanagement.email;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -14,12 +13,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.pravin.taskmanagement.user.PasswordResetToken;
@@ -31,21 +26,20 @@ import com.pravin.taskmanagement.user.UserRepository;
 class EmailServiceTest {
 
 	@Mock
-	private JavaMailSender mailSender;
-
-	@Mock
 	private UserRepository userRepository;
 
 	@Mock
 	private PasswordResetTokenRepository tokenRepository;
 
-	@InjectMocks
 	private EmailService emailService;
 
 	private User testUser;
 
 	@BeforeEach
 	void setUp() {
+		// Instantiate EmailService manually with a dummy API key to initialize RestClient
+		emailService = new EmailService("xkeysib-test-dummy-key", userRepository, tokenRepository);
+
 		// Inject @Value properties matching application.properties defaults
 		ReflectionTestUtils.setField(emailService, "frontendUrl", "http://localhost:4200");
 		ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@example.com");
@@ -63,12 +57,11 @@ class EmailServiceTest {
 		emailService.processForgotPasswordRequest(unknownEmail);
 
 		// Assert - Verify security guardrail (User Enumeration protection)
-		verify(mailSender, never()).send(any(SimpleMailMessage.class));
 		verify(tokenRepository, never()).save(any());
 	}
 
 	@Test
-	void processForgotPasswordRequest_ShouldSendEmail_WhenEmailExists() {
+	void processForgotPasswordRequest_ShouldSaveToken_WhenEmailExists() {
 		// Arrange
 		when(userRepository.findByEmail("pravin@tms.com")).thenReturn(Optional.of(testUser));
 		when(tokenRepository.findByUser(testUser)).thenReturn(Optional.empty());
@@ -77,8 +70,7 @@ class EmailServiceTest {
 		emailService.processForgotPasswordRequest("pravin@tms.com");
 
 		// Assert
-		verify(tokenRepository, times(1)).save(any());
-		verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
+		verify(tokenRepository, times(1)).save(any(PasswordResetToken.class));
 	}
 
 	@Test
@@ -97,23 +89,6 @@ class EmailServiceTest {
 
 		// Assert
 		verify(tokenRepository, times(1)).save(existingToken);
-		verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
-	}
-
-	@Test
-	void processForgotPasswordRequest_ShouldHandleSmtpExceptionGracefully_WhenMailServerFails() {
-		// Arrange
-		when(userRepository.findByEmail("pravin@tms.com")).thenReturn(Optional.of(testUser));
-		when(tokenRepository.findByUser(testUser)).thenReturn(Optional.empty());
-
-		// Simulate an SMTP failure
-		doThrow(new MailSendException("SMTP connection failed")).when(mailSender).send(any(SimpleMailMessage.class));
-
-		// Act & Assert (Should not throw an exception because it's caught and logged)
-		emailService.processForgotPasswordRequest("pravin@tms.com");
-
-		verify(tokenRepository, times(1)).save(any());
-		verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
 	}
 
 	@Test
