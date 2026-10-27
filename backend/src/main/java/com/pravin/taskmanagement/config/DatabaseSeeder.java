@@ -100,7 +100,7 @@ public class DatabaseSeeder {
 			// none exist
 			if (taskRepository.count() == 0) {
 				taskRepository.save(Task.builder().user(admin).taskDescription(
-						"Integrate Spring Security, Bucket4j rate limiting, and SMTP email service for secure authentication")
+						"Integrate Spring Security, Bucket4j rate limiting, and Brevo REST API email service for secure authentication")
 						.status("IN_PROGRESS").dueDate(LocalDate.now().plusDays(3)).build());
 
 				taskRepository.save(Task.builder().user(alex).taskDescription(
