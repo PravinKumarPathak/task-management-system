@@ -3,7 +3,7 @@ Production-grade full-stack architecture built with Spring Boot, Angular, and Po
 
 ## 🌐 Live Deployments
 
-* **Frontend App:** [tms-frontend-beige.vercel.app](https://tms-frontend-beige.vercel.app) *(Angular v21 on Vercel)*
-* **Backend API:** [tms-backend-lh6q.onrender.com](https://tms-backend-lh6q.onrender.com) *(Spring Boot on Render)*
+- **Frontend App:** [tms-frontend-beige.vercel.app](https://tms-frontend-beige.vercel.app) *(Angular v21 on Vercel)*
+- **Backend API Health Check:** [tms-backend-lh6q.onrender.com/actuator/health](https://tms-backend-lh6q.onrender.com/actuator/health) *(Spring Boot on Render)*
 
 > 💡 **Instance Spinning Notice:** The backend is hosted on a free Render web service. If idle, the initial request may take 30–45 seconds to spin up the container.
